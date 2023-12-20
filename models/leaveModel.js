@@ -230,7 +230,6 @@ const LeaveRequestModel = {
   
       return result.recordset;
     } catch (error) {
-      console.error(error);
       return { status: 500, message: 'Failed to retrieve leave details' };
     }
   },

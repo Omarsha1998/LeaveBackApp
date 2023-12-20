@@ -80,7 +80,6 @@ const LeaveRequestController = {
     } catch (error) {
       console.error(error) 
       res.status(500).json({ error: 'Internal Server Error'});
-      
     }
   },
 
@@ -94,7 +93,7 @@ const LeaveRequestController = {
       if (success) {
         return res.status(200).json(success);
       } else {
-        return res.status(400).json({ error: 'Failed to get Leave Balance / No Leave Balance found for this User' });
+        return res.status(400).json({ error: 'Failed to get all Leave Balance' });
       }
     } catch (error) {
       console.error(error) 
@@ -108,9 +107,13 @@ const LeaveRequestController = {
     try {
       const EmployeeCode = req.user.EmployeeCode;
 
-      const pendingLeaves = await Leave.getPendingLeaves(EmployeeCode);
+      const success = await Leave.getPendingLeaves(EmployeeCode);
   
-      res.status(200).json(pendingLeaves);
+      if (success) {
+        return res.status(200).json(success);
+      } else {
+        return res.status(400).json({ error: 'Internal Server Error' });
+      }
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to retrieve pending leave requests' });
