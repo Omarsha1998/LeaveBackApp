@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const LeaveController = require('../controllers/leaveController');
 const authMiddleware = require('../middleware/authMiddleware')
-const updateInterval = 60 * 1000;
+// const updateInterval = 60 * 1000;
 // const updateInterval1 = 10000;
 
 router.get('/leave-details', authMiddleware.verifyToken, LeaveController.getLeaveDetails);
@@ -13,12 +13,12 @@ router.get('/rejected-leaves', authMiddleware.verifyToken, authMiddleware.isAdmi
 router.get('/approved-leaves', authMiddleware.verifyToken, authMiddleware.isAdmin, LeaveController.getApprovedLeaves);
 router.get('/pending-leaves', authMiddleware.verifyToken, authMiddleware.isAdmin, LeaveController.getPendingLeaves);
 router.post('/leave-request', authMiddleware.verifyToken, LeaveController.createLeaveRequest);
-router.put('/editleave-request/:leaveId', authMiddleware.verifyToken, LeaveController.updateLeaveRequest);
-router.delete('/delete-leave/:leaveId', authMiddleware.verifyToken, LeaveController.deleteLeave);
+router.put('/editleave-request/:LeaveID', authMiddleware.verifyToken, LeaveController.updateLeaveRequest);
+router.delete('/delete-leave/:LeaveID', authMiddleware.verifyToken, LeaveController.deleteLeave);
 
 
-setInterval(LeaveController.updateLeaveValue, updateInterval);
-setInterval(LeaveController.updateLeaveBalanceYearly, updateInterval);
+// setInterval(LeaveController.updateLeaveValue, updateInterval);
+// setInterval(LeaveController.updateLeaveBalanceYearly, updateInterval);
 
 
 

@@ -8,7 +8,6 @@ const LeaveRequestModel = {
 
   calculateTotalLeaveValue: async (EmployeeCode, LeaveType) => {
       const pool = await poolPromise;
-    
       // Query to get remaining days from [UE database]..leaveledger
       const leaveLedgerQuery = `
           SELECT
@@ -54,19 +53,19 @@ const LeaveRequestModel = {
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveInfoQuery);
 
-      const leaveLedge = leaveLedgerResult.recordset[0].Remaining || 0;
-      const leaveInfo = leaveInfoResult.recordset[0].Remaining || 0;
-
-
+        const leaveLedge = leaveLedgerResult.recordset[0]?.Remaining || 0;
+        const leaveInfo = leaveInfoResult.recordset[0]?.Remaining || 0;
+        
+    if (leaveLedge === undefined || leaveInfo === undefined) {
+      return { status: 404, message: 'No Leave Details Found for this User' };
+      } else {
       return leaveLedge - leaveInfo;
+    }
   },
 
 
-
-  calculateTotalLeaveValueInEdit: async (EmployeeCode, LeaveType, leaveId) => {
+  calculateTotalLeaveValueInEdit: async (EmployeeCode, LeaveType, LeaveID) => {
       const pool = await poolPromise;
-
-
 
       const leaveIDInforQuery = `
           SELECT
@@ -111,11 +110,10 @@ const LeaveRequestModel = {
               l.Code;
       `;
 
-      // Query to get remaining days from HR..LeaveInfo
       const leaveIDInfoResult = await pool
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
-        .input('LeaveID', mssql.Int, leaveId)
+        .input('LeaveID', mssql.Int, LeaveID)
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveIDInforQuery);
 
@@ -125,7 +123,6 @@ const LeaveRequestModel = {
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveInfoQuery);
       
-      // Execution of the queries
       const leaveLedgerResult = await pool
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
@@ -142,12 +139,6 @@ const LeaveRequestModel = {
       return totalResult;
   },
 
-
-
-
-
-
-  
 
   createLeaveRequest: async (EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
     const pool = await poolPromise;
@@ -217,8 +208,6 @@ const LeaveRequestModel = {
           AND LeaveInfo.DateTo IS NOT NULL
       `;
 
-
-  
       const result = await pool
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
@@ -233,7 +222,6 @@ const LeaveRequestModel = {
       return { status: 500, message: 'Failed to retrieve leave details' };
     }
   },
-
 
 
   // getLeaveBalance: async (EmployeeCode) => {
@@ -286,13 +274,11 @@ const LeaveRequestModel = {
         ORDER BY l.code, Year;
       `;
   
-  
       const result = await pool
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .query(leaveBalanceQuery);
 
-  
       if (result.recordset.length === 0) {
         return { status: 404, message: 'No Leave Balance Found for this User' };
       }
@@ -303,7 +289,6 @@ const LeaveRequestModel = {
       return { status: 500, message: 'Failed to retrieve leave balance' };
     }
   },
-
 
 
   getAllLeaveBalance: async () => {
@@ -389,10 +374,14 @@ const LeaveRequestModel = {
       }
   
       const pendingLeavesQuery = `
-        SELECT LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial
-        FROM HR..LeaveInfo AS LI
-        JOIN [UE database]..Employee AS UE ON CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
-        WHERE LI.Status = 'Pending'
+        SELECT 
+            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial
+        FROM 
+            HR..LeaveInfo AS LI
+        JOIN 
+            [UE database]..Employee AS UE ON CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
+        WHERE 
+            LI.Status = 'Pending'
       `;
     
       const pendingLeavesResult = await pool.request().query(pendingLeavesQuery);
@@ -404,23 +393,24 @@ const LeaveRequestModel = {
     }
   },
 
-  
-  
-  
-  
+
   getRejectedLeaves: async () => {
     try {
       const pool = await poolPromise;
   
       const leaveRequestsQuery = `
-        SELECT LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial 
-        FROM HR..LeaveInfo AS LI
-        JOIN [UE database]..Employee AS UE on CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
-        WHERE LI.Status = 'Rejected'
-        AND TimeFrom IS NOT NULL
-        AND TimeTo IS NOT NULL
-        AND DateFrom IS NOT NULL
-        AND DateTo IS NOT NULL
+        SELECT 
+            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial 
+        FROM 
+            HR..LeaveInfo AS LI
+        JOIN 
+            [UE database]..Employee AS UE on CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
+        WHERE 
+            LI.Status = 'Rejected'
+            AND TimeFrom IS NOT NULL
+            AND TimeTo IS NOT NULL
+            AND DateFrom IS NOT NULL
+            AND DateTo IS NOT NULL
       `;
   
       const rejectLeaveResult = await pool.request().query(leaveRequestsQuery);
@@ -432,19 +422,24 @@ const LeaveRequestModel = {
     }
   },
 
+
   getApprovedLeaves: async () => {
     try {
       const pool = await poolPromise;
   
       const leaveRequestsQuery = `
-        SELECT LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial 
-        FROM HR..LeaveInfo AS LI
-        JOIN [UE database]..Employee AS UE on CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
-        WHERE LI.Status = 'Approved'
-        AND TimeFrom IS NOT NULL
-        AND TimeTo IS NOT NULL
-        AND DateFrom IS NOT NULL
-        AND DateTo IS NOT NULL
+        SELECT 
+            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial 
+        FROM 
+            HR..LeaveInfo AS LI
+        JOIN 
+            [UE database]..Employee AS UE on CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
+        WHERE 
+            LI.Status = 'Approved'
+            AND TimeFrom IS NOT NULL
+            AND TimeTo IS NOT NULL
+            AND DateFrom IS NOT NULL
+            AND DateTo IS NOT NULL
       `;
       const approvedLeaveResult = await pool.request().query(leaveRequestsQuery);
   
@@ -565,13 +560,9 @@ const LeaveRequestModel = {
       return 0;
     }
   },
-  
-
-  
-  
 
 
-  updateAndValidateLeave: async (leaveId, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
+  updateAndValidateLeave: async (LeaveID, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
     const pool = await poolPromise;
 
     const formattedTimeFrom = TimeFrom.substring(0, 5);
@@ -593,7 +584,7 @@ const LeaveRequestModel = {
 
     const checkLeaveOwnershipResult = await pool
       .request()
-      .input('LeaveID', mssql.Int, leaveId)
+      .input('LeaveID', mssql.Int, LeaveID)
       .query(checkLeaveOwnershipQuery);
 
       const codeFromDatabase = checkLeaveOwnershipResult.recordset[0].Code;
@@ -627,7 +618,7 @@ const LeaveRequestModel = {
         .input('DateTo', mssql.Date, DateTo)
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .input('Reason', mssql.NVarChar, Reason)
-        .input('LeaveID', mssql.Int, leaveId)
+        .input('LeaveID', mssql.Int, LeaveID)
         .query(updateLeaveQuery);
     });
 
@@ -664,31 +655,31 @@ const LeaveRequestModel = {
   //   }
   // },
 
-  updateLeaveValue: async (LeaveType, increment, currentYear) => {
-    try {
-      const pool = await poolPromise;
+  // updateLeaveValue: async (LeaveType, increment, currentYear) => {
+  //   try {
+  //     const pool = await poolPromise;
   
-      const updateVLQuery = `
-        UPDATE LeaveInfo
-        SET Value = Value + @Increment,
-            Days = Days + @Increment
-        WHERE LeaveType = @LeaveType
-        AND YEAR(YearGain) = @CurrentYear
-      `;
+  //     const updateVLQuery = `
+  //       UPDATE LeaveInfo
+  //       SET Value = Value + @Increment,
+  //           Days = Days + @Increment
+  //       WHERE LeaveType = @LeaveType
+  //       AND YEAR(YearGain) = @CurrentYear
+  //     `;
   
-      const result = await pool
-        .request()
-        .input('Increment', mssql.Float, increment)
-        .input('LeaveType', mssql.NVarChar, LeaveType)
-        .input('CurrentYear', mssql.Int, currentYear)
-        .query(updateVLQuery);
+  //     const result = await pool
+  //       .request()
+  //       .input('Increment', mssql.Float, increment)
+  //       .input('LeaveType', mssql.NVarChar, LeaveType)
+  //       .input('CurrentYear', mssql.Int, currentYear)
+  //       .query(updateVLQuery);
   
-      return result.rowsAffected[0];
-    } catch (error) {
-      console.error(error);
-      return { status: 500, message: 'Error Updating Leave Value' };
-    }
-  },
+  //     return result.rowsAffected[0];
+  //   } catch (error) {
+  //     console.error(error);
+  //     return { status: 500, message: 'Error Updating Leave Value' };
+  //   }
+  // },
 
 
   // updateLeaveBalanceYearly: async function(type, initialValue, remarkPrefix, currentYear) {
@@ -719,38 +710,33 @@ const LeaveRequestModel = {
   //   }
   // },
 
-  updateLeaveBalanceYearly: async (type, initialValue, remarkPrefix, currentYear) => {
-    try {
-      const pool = await poolPromise;
-      const insertLeaveTypeQuery = `
-        INSERT INTO LeaveInfo (UserID, LeaveType, Value, YearGain, TransDate, ValueType, Status, ApprovedBy, ApproveDateTime, Days, Remarks)
-        SELECT UserID, @LeaveType, @InitialValue, @CurrentYear, GETDATE(), 'Credit', 'Approved', 'System', GETDATE(), @InitialValue, @RemarkPrefix + CAST(@CurrentYear AS VARCHAR)
-        FROM Users;
-      `;
+  // updateLeaveBalanceYearly: async (type, initialValue, remarkPrefix, currentYear) => {
+  //   try {
+  //     const pool = await poolPromise;
+  //     const insertLeaveTypeQuery = `
+  //       INSERT INTO LeaveInfo (UserID, LeaveType, Value, YearGain, TransDate, ValueType, Status, ApprovedBy, ApproveDateTime, Days, Remarks)
+  //       SELECT UserID, @LeaveType, @InitialValue, @CurrentYear, GETDATE(), 'Credit', 'Approved', 'System', GETDATE(), @InitialValue, @RemarkPrefix + CAST(@CurrentYear AS VARCHAR)
+  //       FROM Users;
+  //     `;
   
-      const result = await pool
-        .request()
-        .input('LeaveType', mssql.NVarChar, type)
-        .input('InitialValue', mssql.Float, initialValue)
-        .input('CurrentYear', mssql.Int, currentYear)
-        .input('RemarkPrefix', mssql.NVarChar, remarkPrefix)
-        .query(insertLeaveTypeQuery);
+  //     const result = await pool
+  //       .request()
+  //       .input('LeaveType', mssql.NVarChar, type)
+  //       .input('InitialValue', mssql.Float, initialValue)
+  //       .input('CurrentYear', mssql.Int, currentYear)
+  //       .input('RemarkPrefix', mssql.NVarChar, remarkPrefix)
+  //       .query(insertLeaveTypeQuery);
   
-      if (result.rowsAffected && result.rowsAffected.length > 0 && result.rowsAffected[0] > 0) {
-        return { rowsAffected: result.rowsAffected[0] };
-      } else {
-        return { status: 500, message: 'Failed to insert leave info. No rows affected.' };
-      }
-    } catch (error) {
-      console.error('Error in insertLeaveInfo:', error);
-      return { status: 500, message: 'Internal Server Error' };
-    }
-  },
-
-
-
-
-
+  //     if (result.rowsAffected && result.rowsAffected.length > 0 && result.rowsAffected[0] > 0) {
+  //       return { rowsAffected: result.rowsAffected[0] };
+  //     } else {
+  //       return { status: 500, message: 'Failed to insert leave info. No rows affected.' };
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in insertLeaveInfo:', error);
+  //     return { status: 500, message: 'Internal Server Error' };
+  //   }
+  // },
 
 
 };

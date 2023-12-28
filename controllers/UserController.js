@@ -27,7 +27,7 @@ const UserController = {
       const user = await UserModel.loginUser(username, password);
       if (typeof user === 'object') {
         const token = jwt.sign(user, JWT_SECRET);
-        res.cookie('token', token, { httpOnly: true, secure: true });
+        res.cookie('token', token, { httpsOnly: true, secure: true });
         res.status(200).json({ message: 'Login successful!', token });
       } else {
         res.status(401).send(user);
@@ -49,14 +49,6 @@ const UserController = {
   },
 
 
-  employee: async (req, res) => {
-    try {
-      const employee = await UserModel.getEmployee();
-      res.status(200).json(employee);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to get Employee'});
-    }
-  },
 
   
 };
