@@ -36,8 +36,6 @@ const poolPromise = new mssql.ConnectionPool(config)
   });
 
 
-
-
   module.exports = {
     poolPromise,
   };
@@ -45,8 +43,6 @@ const poolPromise = new mssql.ConnectionPool(config)
 
 const userRoutes = require('./routes/userRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
-
-
 
 
 app.use('/user', userRoutes); 

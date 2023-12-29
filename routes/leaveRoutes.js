@@ -21,6 +21,4 @@ router.delete('/delete-leave/:LeaveID', authMiddleware.verifyToken, LeaveControl
 // setInterval(LeaveController.updateLeaveBalanceYearly, updateInterval);
 
 
-
-
 module.exports = router;

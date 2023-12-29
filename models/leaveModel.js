@@ -53,14 +53,14 @@ const LeaveRequestModel = {
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveInfoQuery);
 
-        const leaveLedge = leaveLedgerResult.recordset[0]?.Remaining || 0;
-        const leaveInfo = leaveInfoResult.recordset[0]?.Remaining || 0;
+      const leaveLedge = leaveLedgerResult.recordset[0]?.Remaining || 0;
+      const leaveInfo = leaveInfoResult.recordset[0]?.Remaining || 0;
         
-    if (leaveLedge === undefined || leaveInfo === undefined) {
-      return { status: 404, message: 'No Leave Details Found for this User' };
-      } else {
-      return leaveLedge - leaveInfo;
-    }
+      if (leaveLedge === undefined && leaveInfo === undefined) {
+        return { status: 404, message: 'No Leave Details Found for this User' };
+        } else {
+        return leaveLedge - leaveInfo;
+      }
   },
 
 
@@ -130,13 +130,18 @@ const LeaveRequestModel = {
         .query(leaveLedgerQuery);
 
 
-      const leaveIDInfo = leaveIDInfoResult.recordset[0].Remaining || 0;
-      const leaveInfo = leaveInfoResult.recordset[0].Remaining || 0;
-      const leaveLedge = leaveLedgerResult.recordset[0].Remaining || 0;
-
-      const totalResult = leaveLedge - leaveInfo + leaveIDInfo;
-
-      return totalResult;
+      const leaveIDInfo = leaveIDInfoResult.recordset[0]?.Remaining || 0;
+      const leaveInfo = leaveInfoResult.recordset[0]?.Remaining || 0;
+      const leaveLedge = leaveLedgerResult.recordset[0]?.Remaining || 0;
+      
+      if (leaveIDInfo === undefined && leaveInfo === undefined && leaveLedge === undefined) {
+        console.log("No leave type found");
+        return { status: 404, message: 'No Leave Details Found for this User' };
+      } else {
+        const totalResult = leaveLedge - leaveInfo + leaveIDInfo;
+        return totalResult;
+      }
+      
   },
 
 
