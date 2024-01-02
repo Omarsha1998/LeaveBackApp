@@ -4,6 +4,7 @@ const axios = require('axios');
 
 
 const UserModel = {
+
   registerUser: async (username, password) => {
     try {
       const pool = await poolPromise;
@@ -118,11 +119,11 @@ const UserModel = {
   //   }
   // },
 
-  loginUser: async (employeeCode, password) => {
+  loginUser: async (EmployeeCode, password) => {
     try {
       const pool = await poolPromise;
       const request = pool.request();
-      const result = await request.query(`SELECT * FROM Employee WHERE EmployeeCode = '${employeeCode}'`);
+      const result = await request.query(`SELECT * FROM Employee WHERE EmployeeCode = '${EmployeeCode}'`);
       const employee = result.recordset[0];
   
       if (!employee) {

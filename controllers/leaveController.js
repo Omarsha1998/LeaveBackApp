@@ -3,7 +3,7 @@ const Leave = require('../models/leaveModel');
 const LeaveRequestController = {
 
   createLeaveRequest: async (req, res) => {
-  
+
     try {
       
       const { LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason } = req.body;
@@ -48,7 +48,6 @@ const LeaveRequestController = {
 
 
   getLeaveDetails: async (req, res) => {
-  
     try {
       const EmployeeCode = req.user.EmployeeCode;
   
@@ -66,10 +65,9 @@ const LeaveRequestController = {
   },
 
   getLeaveBalance: async (req, res) => {
-
     try {
       const EmployeeCode = req.user.EmployeeCode;
-  
+
       const success = await Leave.getLeaveBalance(EmployeeCode);
   
       if (success) {
@@ -83,11 +81,8 @@ const LeaveRequestController = {
     }
   },
 
-
   getAllLeaveBalance: async (req, res) => {
-
     try {
-  
       const success = await Leave.getAllLeaveBalance();
   
       if (success) {
@@ -103,12 +98,10 @@ const LeaveRequestController = {
   },
 
   getPendingLeaves: async (req, res) => {
-  
     try {
       if (!req.user.isAdmin) {
         return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
       }
-      
 
       const EmployeeCode = req.user.EmployeeCode;
 
@@ -140,9 +133,7 @@ const LeaveRequestController = {
     }
   },
 
-
   getApprovedLeaves: async (req, res) => {
-  
     try {
       
       if (!req.user.isAdmin) {
@@ -157,7 +148,6 @@ const LeaveRequestController = {
     }
   },
 
-
   deleteLeave: async (req, res) => {
     try {
       const LeaveID = req.params.LeaveID;
@@ -171,10 +161,8 @@ const LeaveRequestController = {
     }
   },
 
-
   updateLeaveRequest: async (req, res) => {
     try {
-
       const LeaveID = req.params.LeaveID;
       const { LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason } = req.body;
       const EmployeeCode = req.user.EmployeeCode;

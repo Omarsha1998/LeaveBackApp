@@ -6,6 +6,7 @@ const JWT_SECRET = 'secret';
 const tokenBlacklist = new Set();
 
 const UserController = {
+  
   registerUser: async (req, res) => {
     const { username, password } = req.body;
     try {

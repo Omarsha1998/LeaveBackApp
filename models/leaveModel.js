@@ -11,19 +11,17 @@ const LeaveRequestModel = {
       // Query to get remaining days from [UE database]..leaveledger
       const leaveLedgerQuery = `
           SELECT
-              l.leaveType,
+              l.LeaveType,
               Remaining = SUM(l.debit - l.credit)
           FROM
-              [UE database]..leaveledger l
+              [UE database]..LeaveLedger l
           WHERE
-              l.YearEffectivity = YEAR(GETDATE())
+              l.Code = @EmployeeCode
+              AND l.LeaveType = @LeaveType
               AND (l.Debit > 0 OR l.Credit > 0)
-              AND l.code = @EmployeeCode
-              AND l.leaveType = @LeaveType
           GROUP BY
               l.code,
-              l.yearAttributed,
-              l.leaveType
+              l.LeaveType
           ORDER BY
               l.Code;
       `;
@@ -96,15 +94,13 @@ const LeaveRequestModel = {
               l.leaveType,
               Remaining = SUM(l.debit - l.credit)
           FROM
-              [UE database]..leaveledger l
+              [UE database]..LeaveLedger l
           WHERE
-              l.YearEffectivity = YEAR(GETDATE())
-              AND (l.Debit > 0 OR l.Credit > 0)
-              AND l.code = @EmployeeCode
+              l.code = @EmployeeCode
               AND l.leaveType = @LeaveType
+              AND (l.Debit > 0 OR l.Credit > 0)
           GROUP BY
               l.code,
-              l.yearAttributed,
               l.leaveType
           ORDER BY
               l.Code;
@@ -129,13 +125,11 @@ const LeaveRequestModel = {
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveLedgerQuery);
 
-
       const leaveIDInfo = leaveIDInfoResult.recordset[0]?.Remaining || 0;
       const leaveInfo = leaveInfoResult.recordset[0]?.Remaining || 0;
       const leaveLedge = leaveLedgerResult.recordset[0]?.Remaining || 0;
       
       if (leaveIDInfo === undefined && leaveInfo === undefined && leaveLedge === undefined) {
-        console.log("No leave type found");
         return { status: 404, message: 'No Leave Details Found for this User' };
       } else {
         const totalResult = leaveLedge - leaveInfo + leaveIDInfo;
@@ -270,7 +264,6 @@ const LeaveRequestModel = {
         FROM [UE database]..LeaveLedger l
         WHERE 
           l.Code = @EmployeeCode
-          AND YEAR(l.YearAttributed) = YEAR(GETDATE())
           AND (l.Debit > 0 OR l.Credit > 0)
         GROUP BY 
           l.code,
@@ -318,8 +311,7 @@ const LeaveRequestModel = {
       LEFT JOIN
           [UE database]..Department d ON e.DeptCode = d.DeptCode
       WHERE 
-          YEAR(l.YearAttributed) = YEAR(GETDATE())
-          AND (l.Debit > 0 OR l.Credit > 0)
+          l.Debit > 0 OR l.Credit > 0
           AND e.isActive = 1
       GROUP BY 
           l.code,
@@ -327,7 +319,7 @@ const LeaveRequestModel = {
           l.leaveType,
           es.DESCRIPTION,
           e.Position,
-          d.Description  -- Add this line to include Department Description in GROUP BY
+          d.Description  
       ORDER BY 
           l.code, Year;
       `;
