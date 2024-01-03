@@ -19,6 +19,7 @@ const LeaveRequestModel = {
               l.Code = @EmployeeCode
               AND l.LeaveType = @LeaveType
               AND (l.Debit > 0 OR l.Credit > 0)
+              AND (l.LeaveType <> 'SL' OR YEAR(l.YearAttributed) = YEAR(GETDATE()))
           GROUP BY
               l.code,
               l.LeaveType
@@ -99,6 +100,7 @@ const LeaveRequestModel = {
               l.code = @EmployeeCode
               AND l.leaveType = @LeaveType
               AND (l.Debit > 0 OR l.Credit > 0)
+              AND (l.LeaveType <> 'SL' OR YEAR(l.YearAttributed) = YEAR(GETDATE()))
           GROUP BY
               l.code,
               l.leaveType
@@ -257,18 +259,19 @@ const LeaveRequestModel = {
   
       const leaveBalanceQuery = `
         SELECT 
-          l.code,
-          YEAR(l.YearAttributed) AS Year,
-          l.leaveType,
-          Remaining = SUM(l.Debit - l.Credit)
+            l.code,
+            YEAR(l.YearAttributed) AS Year,
+            l.leaveType,
+            Remaining = SUM(l.Debit - l.Credit)
         FROM [UE database]..LeaveLedger l
-        WHERE 
-          l.Code = @EmployeeCode
-          AND (l.Debit > 0 OR l.Credit > 0)
+        WHERE          
+            l.Code = @EmployeeCode
+            AND (l.Debit > 0 OR l.Credit > 0)
+            AND ((l.leaveType = 'SL' AND YEAR(l.YearAttributed) = YEAR(GETDATE())) OR l.leaveType <> 'SL')
         GROUP BY 
-          l.code,
-          YEAR(l.YearAttributed),
-          l.leaveType
+            l.code,
+            YEAR(l.YearAttributed),
+            l.leaveType
         ORDER BY l.code, Year;
       `;
   
@@ -294,35 +297,35 @@ const LeaveRequestModel = {
       const pool = await poolPromise;
   
       const leaveBalanceQuery = `
-      SELECT 
-          l.code,
-          YEAR(l.YearAttributed) AS Year,
-          l.leaveType,
-          Remaining = SUM(l.Debit - l.Credit),
-          es.DESCRIPTION AS EmployeeStatus,
-          e.Position,
-          d.Description AS Department 
-      FROM 
-          [UE database]..LeaveLedger l
-      JOIN 
-          [UE database]..Employee e ON l.code = e.EmployeeCode
-      JOIN 
-          [UE database]..EmployeeStatus es ON e.EmployeeStatus = es.code
-      LEFT JOIN
-          [UE database]..Department d ON e.DeptCode = d.DeptCode
-      WHERE 
-          l.Debit > 0 OR l.Credit > 0
-          AND e.isActive = 1
-      GROUP BY 
-          l.code,
-          YEAR(l.YearAttributed),
-          l.leaveType,
-          es.DESCRIPTION,
-          e.Position,
-          d.Description  
-      ORDER BY 
-          l.code, Year;
+        SELECT
+            e.EmployeeCode,
+            l.leaveType,
+            Remaining = SUM(l.Debit - l.Credit),
+            es.Description AS EmployeeStatus,
+            e.Position,
+            d.Description AS Department
+        FROM
+            [UE database]..Employee e
+        JOIN
+            [UE database]..EmployeeStatus es ON e.EmployeeStatus = es.code
+        LEFT JOIN
+            [UE database]..Department d ON e.DeptCode = d.DeptCode
+        LEFT JOIN
+            [UE database]..LeaveLedger l ON e.EmployeeCode = l.Code
+        WHERE
+            e.isActive = 1
+            AND (l.Debit > 0 OR l.Credit > 0)
+            AND ((l.leaveType = 'SL' AND YEAR(l.YearAttributed) = YEAR(GETDATE())) OR l.leaveType <> 'SL')
+        GROUP BY
+            e.EmployeeCode,
+            l.leaveType,
+            es.Description,
+            e.Position,
+            d.Description
+        ORDER BY
+            e.EmployeeCode;
       `;
+
   
       const result = await pool.request().query(leaveBalanceQuery);
           
@@ -334,6 +337,35 @@ const LeaveRequestModel = {
     } catch (error) {
       console.error(error);
       return { status: 500, message: 'Failed to retrieve leave balance' };
+    }
+  },
+
+  
+  getForfeitedLeave: async (EmployeeCode) => {
+    try {
+      const pool = await poolPromise;
+
+      const forfeitLeaveQuery = `
+        SELECT *
+        FROM
+          [HR]..leaveledger
+        WHERE
+          code = @EmployeeCode
+      `
+
+      const result = await pool
+      .request()
+      .input('EmployeeCode', mssql.Int, EmployeeCode)
+      .query(forfeitLeaveQuery);
+
+      if(result.recordset.length === 0) {
+        return { status: 404, message: 'No Forfeited Leaves for this User'};
+      }
+
+      return result.recordset;
+    } catch (error) {
+      console.error(error);
+      return { status: 500, message: 'Failed to retrieve Forfeited Leaves' };
     }
   },
 

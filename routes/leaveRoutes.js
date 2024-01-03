@@ -7,6 +7,7 @@ const authMiddleware = require('../middleware/authMiddleware')
 
 router.get('/leave-details', authMiddleware.verifyToken, LeaveController.getLeaveDetails);
 router.get('/leave-balance', authMiddleware.verifyToken, LeaveController.getLeaveBalance);
+router.get('/forfeited-leave', authMiddleware.verifyToken, LeaveController.getForfeitedLeave);
 router.get('/All-Leave-Balance', authMiddleware.verifyToken, LeaveController.getAllLeaveBalance);
 router.post('/admin-action', authMiddleware.verifyToken, authMiddleware.isAdmin, LeaveController.updateLeaveAction);
 router.get('/rejected-leaves', authMiddleware.verifyToken, authMiddleware.isAdmin, LeaveController.getRejectedLeaves);

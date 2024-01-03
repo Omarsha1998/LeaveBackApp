@@ -97,6 +97,23 @@ const LeaveRequestController = {
     }
   },
 
+  getForfeitedLeave: async (req, res) => {
+    try {
+      const EmployeeCode = req.user.EmployeeCode;
+
+      const success = await Leave.getForfeitedLeave(EmployeeCode);
+      
+      if(success) {
+        return res.status(200).json(success);
+      } else {
+        return res.status(400).json({ error: 'Failed to get the Forfeited Leaves for this User'});
+      }
+    } catch (error) {
+      console.error(error)
+      res.status(500),json({ error: 'Initial Server Error'});
+    }
+  },
+
   getPendingLeaves: async (req, res) => {
     try {
       if (!req.user.isAdmin) {
