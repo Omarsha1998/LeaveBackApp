@@ -120,9 +120,9 @@ const LeaveRequestController = {
         return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
       }
 
-      const EmployeeCode = req.user.EmployeeCode;
+      const DeptCode = req.user.Department;
 
-      const success = await Leave.getPendingLeaves(EmployeeCode);
+      const success = await Leave.getPendingLeaves(DeptCode);
   
       if (success) {
         return res.status(200).json(success);

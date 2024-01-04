@@ -255,92 +255,111 @@ const LeaveRequestModel = {
 
   getLeaveBalance: async (EmployeeCode) => {
     try {
-      const pool = await poolPromise;
-  
-      const leaveBalanceQuery = `
-        SELECT 
-            l.code,
-            YEAR(l.YearAttributed) AS Year,
-            l.leaveType,
-            Remaining = SUM(l.Debit - l.Credit)
-        FROM [UE database]..LeaveLedger l
-        WHERE          
-            l.Code = @EmployeeCode
-            AND (l.Debit > 0 OR l.Credit > 0)
-            AND ((l.leaveType = 'SL' AND YEAR(l.YearAttributed) = YEAR(GETDATE())) OR l.leaveType <> 'SL')
-        GROUP BY 
-            l.code,
-            YEAR(l.YearAttributed),
-            l.leaveType
-        ORDER BY l.code, Year;
-      `;
-  
-      const result = await pool
-        .request()
-        .input('EmployeeCode', mssql.Int, EmployeeCode)
-        .query(leaveBalanceQuery);
+        const pool = await poolPromise;
 
-      if (result.recordset.length === 0) {
-        return { status: 404, message: 'No Leave Balance Found for this User' };
-      }
-  
-      return result.recordset;
+        const leaveBalanceQuery = `
+            SELECT 
+                l.code,
+                YEAR(l.YearAttributed) AS Year,
+                l.leaveType,
+                Remaining = ROUND(SUM(l.Debit - l.Credit), 2)
+            FROM [UE database]..LeaveLedger l
+            WHERE          
+                l.Code = @EmployeeCode
+                AND (l.Debit > 0 OR l.Credit > 0)
+                AND ((l.leaveType = 'SL' AND YEAR(l.YearAttributed) = YEAR(GETDATE())) OR l.leaveType <> 'SL')
+            GROUP BY 
+                l.code,
+                YEAR(l.YearAttributed),
+                l.leaveType
+            ORDER BY l.code, Year;
+        `;
+
+        const result = await pool
+            .request()
+            .input('EmployeeCode', mssql.Int, EmployeeCode)
+            .query(leaveBalanceQuery);
+
+        if (result.recordset.length === 0) {
+            return { status: 404, message: 'No Leave Balance Found for this User' };
+        }
+
+        // Format the Remaining value
+        const formattedResult = result.recordset.map(item => {
+            const formattedRemaining = item.Remaining % 1 === 0 ? parseInt(item.Remaining) : item.Remaining.toFixed(2);
+            return {
+                ...item,
+                Remaining: formattedRemaining
+            };
+        });
+
+        return formattedResult;
     } catch (error) {
-      console.error(error);
-      return { status: 500, message: 'Failed to retrieve leave balance' };
+        console.error(error);
+        return { status: 500, message: 'Failed to retrieve leave balance' };
     }
   },
 
 
   getAllLeaveBalance: async () => {
     try {
-      const pool = await poolPromise;
-  
-      const leaveBalanceQuery = `
-        SELECT
-            e.EmployeeCode,
-            l.leaveType,
-            Remaining = SUM(l.Debit - l.Credit),
-            es.Description AS EmployeeStatus,
-            e.Position,
-            d.Description AS Department
-        FROM
-            [UE database]..Employee e
-        JOIN
-            [UE database]..EmployeeStatus es ON e.EmployeeStatus = es.code
-        LEFT JOIN
-            [UE database]..Department d ON e.DeptCode = d.DeptCode
-        LEFT JOIN
-            [UE database]..LeaveLedger l ON e.EmployeeCode = l.Code
-        WHERE
-            e.isActive = 1
-            AND (l.Debit > 0 OR l.Credit > 0)
-            AND ((l.leaveType = 'SL' AND YEAR(l.YearAttributed) = YEAR(GETDATE())) OR l.leaveType <> 'SL')
-        GROUP BY
-            e.EmployeeCode,
-            l.leaveType,
-            es.Description,
-            e.Position,
-            d.Description
-        ORDER BY
-            e.EmployeeCode;
-      `;
+        const pool = await poolPromise;
 
-  
-      const result = await pool.request().query(leaveBalanceQuery);
-          
-      if (result.recordset.length === 0) {
-        return { status: 404, message: 'No Leave Balance Found for any user' };
-      }
-  
-      return result.recordset;
+        const leaveBalanceQuery = `
+            SELECT
+                e.Class,
+                e.EmployeeCode,
+                e.Position,
+                es.Description AS EmployeeStatus,
+                d.Description AS Department,
+                l.leaveType,
+                Remaining = ROUND(SUM(ISNULL(l.Debit, 0) - ISNULL(l.Credit, 0)), 2)
+            FROM
+                [UE database]..Employee e
+            JOIN
+                [UE database]..EmployeeStatus es ON e.EmployeeStatus = es.code
+            LEFT JOIN
+                [UE database]..Department d ON e.DeptCode = d.DeptCode
+            LEFT JOIN
+                [UE database]..LeaveLedger l ON e.EmployeeCode = l.Code
+                    AND (l.Debit > 0 OR l.Credit > 0)
+                    AND (l.leaveType <> 'SL' OR (l.leaveType = 'SL' AND YEAR(l.YearAttributed) = YEAR(GETDATE())))
+            WHERE
+                e.isActive = 1
+            GROUP BY
+                e.Class,
+                e.EmployeeCode,
+                e.Position,
+                es.Description,
+                d.Description,
+                l.leaveType
+            ORDER BY
+                e.EmployeeCode;  
+        `;
+
+        const result = await pool.request().query(leaveBalanceQuery);
+
+        if (result.recordset.length === 0) {
+            return { status: 404, message: 'No Leave Balance Found for any user' };
+        }
+
+        // Format the Remaining value
+        const formattedResult = result.recordset.map(item => {
+            const formattedRemaining = item.Remaining % 1 === 0 ? parseInt(item.Remaining) : item.Remaining.toFixed(2);
+            return {
+                ...item,
+                Remaining: formattedRemaining
+            };
+        });
+
+        return formattedResult;
     } catch (error) {
-      console.error(error);
-      return { status: 500, message: 'Failed to retrieve leave balance' };
+        console.error(error);
+        return { status: 500, message: 'Failed to retrieve leave balance' };
     }
   },
 
-  
+
   getForfeitedLeave: async (EmployeeCode) => {
     try {
       const pool = await poolPromise;
@@ -394,7 +413,7 @@ const LeaveRequestModel = {
     // },
 
 
-  getPendingLeaves: async () => {
+  getPendingLeaves: async (DeptCode) => {
     try {
       const pool = await poolPromise;
   
@@ -404,23 +423,28 @@ const LeaveRequestModel = {
   
       const pendingLeavesQuery = `
         SELECT 
-            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial
+            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial, UE.DeptCode
         FROM 
             HR..LeaveInfo AS LI
         JOIN 
             [UE database]..Employee AS UE ON CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
         WHERE 
             LI.Status = 'Pending'
-      `;
+            AND UE.DeptCode = @DeptCode;
+        `;
+      
+      const pendingLeavesResult = await pool
+        .request()
+        .input('DeptCode', mssql.VarChar, DeptCode) 
+        .query(pendingLeavesQuery);
     
-      const pendingLeavesResult = await pool.request().query(pendingLeavesQuery);
-  
       return pendingLeavesResult.recordset;
     } catch (error) {
       console.error(error);
       return { status: 500, message: 'Internal Server Error' };
     }
   },
+    
 
 
   getRejectedLeaves: async () => {

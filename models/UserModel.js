@@ -136,6 +136,7 @@ const UserModel = {
         return {
           Name: employee.LastName + ',' + ' ' + employee.FirstName + ' ' + employee.MiddleInitial + '.',
           EmployeeCode: employee.EmployeeCode,
+          Department: employee.DeptCode,
           isAdmin: true
         };
       }
