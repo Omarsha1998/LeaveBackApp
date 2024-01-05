@@ -119,10 +119,10 @@ const LeaveRequestController = {
       if (!req.user.isAdmin) {
         return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
       }
+      
+      const EmployeeCode = req.user.EmployeeCode;
 
-      const DeptCode = req.user.Department;
-
-      const success = await Leave.getPendingLeaves(DeptCode);
+      const success = await Leave.getPendingLeaves(EmployeeCode);
   
       if (success) {
         return res.status(200).json(success);
@@ -141,8 +141,10 @@ const LeaveRequestController = {
       if (!req.user.isAdmin) {
         return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
       }
-      
-      const rejectedLeaves = await Leave.getRejectedLeaves();
+
+      const EmployeeCode = req.user.EmployeeCode;
+
+      const rejectedLeaves = await Leave.getRejectedLeaves(EmployeeCode);
   
       res.status(200).json(rejectedLeaves);
     } catch (error) {
@@ -157,7 +159,9 @@ const LeaveRequestController = {
         return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
       }
 
-      const approvedLeave = await Leave.getApprovedLeaves();
+      const EmployeeCode = req.user.EmployeeCode;
+
+      const approvedLeave = await Leave.getApprovedLeaves(EmployeeCode);
   
       res.status(200).json(approvedLeave);
     } catch (error) {

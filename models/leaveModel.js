@@ -371,11 +371,10 @@ const LeaveRequestModel = {
         WHERE
           code = @EmployeeCode
       `
-
       const result = await pool
-      .request()
-      .input('EmployeeCode', mssql.Int, EmployeeCode)
-      .query(forfeitLeaveQuery);
+        .request()
+        .input('EmployeeCode', mssql.Int, EmployeeCode)
+        .query(forfeitLeaveQuery);
 
       if(result.recordset.length === 0) {
         return { status: 404, message: 'No Forfeited Leaves for this User'};
@@ -413,13 +412,13 @@ const LeaveRequestModel = {
     // },
 
 
-  getPendingLeaves: async (DeptCode) => {
+  getPendingLeaves: async (EmployeeCode) => {
     try {
       const pool = await poolPromise;
-  
-      if (!pool) {
-        return { status: 500, message: 'Error Connecting to Database' };
-      }
+
+        if (!pool) {
+            return { status: 500, message: 'Error Connecting to Database' };
+        }
   
       const pendingLeavesQuery = `
         SELECT 
@@ -430,76 +429,133 @@ const LeaveRequestModel = {
             [UE database]..Employee AS UE ON CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
         WHERE 
             LI.Status = 'Pending'
-            AND UE.DeptCode = @DeptCode;
         `;
-      
+  
       const pendingLeavesResult = await pool
         .request()
-        .input('DeptCode', mssql.VarChar, DeptCode) 
         .query(pendingLeavesQuery);
-    
-      return pendingLeavesResult.recordset;
+  
+      const approverCodeQuery = `
+        SELECT 
+            code, 
+            deptCode
+        FROM 
+            [HR]..Approvers
+        WHERE 
+            code = @EmployeeCode
+        `;
+      const approverCodeResult = await pool
+        .request()
+        .input('EmployeeCode', mssql.Int, EmployeeCode)
+        .query(approverCodeQuery);
+
+      // Filter pendingLeavesResult based on matching deptCode
+      const filteredPendingLeaves = pendingLeavesResult.recordset.filter(leave => {
+          return approverCodeResult.recordset.some(approver => approver.deptCode === leave.DeptCode);
+      });
+  
+      return filteredPendingLeaves;
     } catch (error) {
       console.error(error);
       return { status: 500, message: 'Internal Server Error' };
     }
   },
-    
-
-
-  getRejectedLeaves: async () => {
+  
+  
+  getApprovedLeaves: async (EmployeeCode) => {
     try {
       const pool = await poolPromise;
-  
+
       const leaveRequestsQuery = `
         SELECT 
-            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial 
+              LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial, UE.DeptCode
         FROM 
             HR..LeaveInfo AS LI
         JOIN 
-            [UE database]..Employee AS UE on CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
-        WHERE 
-            LI.Status = 'Rejected'
-            AND TimeFrom IS NOT NULL
-            AND TimeTo IS NOT NULL
-            AND DateFrom IS NOT NULL
-            AND DateTo IS NOT NULL
-      `;
-  
-      const rejectLeaveResult = await pool.request().query(leaveRequestsQuery);
-  
-      return rejectLeaveResult.recordset;
-    } catch (error) {
-      console.error(error);
-      return { status: 500, message: 'Error Getting Rejected Leave' };
-    }
-  },
-
-
-  getApprovedLeaves: async () => {
-    try {
-      const pool = await poolPromise;
-  
-      const leaveRequestsQuery = `
-        SELECT 
-            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial 
-        FROM 
-            HR..LeaveInfo AS LI
-        JOIN 
-            [UE database]..Employee AS UE on CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
+            [UE database]..Employee AS UE ON CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
         WHERE 
             LI.Status = 'Approved'
             AND TimeFrom IS NOT NULL
             AND TimeTo IS NOT NULL
             AND DateFrom IS NOT NULL
             AND DateTo IS NOT NULL
-      `;
+        `;
+
       const approvedLeaveResult = await pool.request().query(leaveRequestsQuery);
-  
-      return approvedLeaveResult.recordset;
+      
+      const approverCodeQuery = `
+        SELECT 
+              code, 
+              deptCode
+        FROM 
+            [HR]..Approvers
+        WHERE 
+            code = @EmployeeCode
+        `;
+
+      const approverCodeResult = await pool
+        .request()
+        .input('EmployeeCode', mssql.Int, EmployeeCode)
+        .query(approverCodeQuery);
+
+      // Filter approvedLeaveResult based on matching deptCode
+      const filteredApprovedLeaves = approvedLeaveResult.recordset.filter(leave => {
+          return approverCodeResult.recordset.some(approver => approver.deptCode === leave.DeptCode);
+      });
+
+      return filteredApprovedLeaves;
     } catch (error) {
-      console.error(error);
-      return { status: 500, message: 'Error Getting Approved Leave' };
+        console.error(error);
+        return { status: 500, message: 'Error Getting Approved Leave' };
+    }
+  },
+
+
+  getRejectedLeaves: async (EmployeeCode) => {
+    try {
+      const pool = await poolPromise;
+
+      const leaveRequestsQuery = `
+        SELECT 
+            LI.*, UE.FirstName, UE.LastName, UE.MiddleInitial, UE.DeptCode
+        FROM 
+            HR..LeaveInfo AS LI
+        JOIN 
+            [UE database]..Employee AS UE ON CONVERT(varchar(5), LI.Code) = UE.EmployeeCode
+        WHERE 
+            LI.Status = 'Rejected'
+            AND TimeFrom IS NOT NULL
+            AND TimeTo IS NOT NULL
+            AND DateFrom IS NOT NULL
+            AND DateTo IS NOT NULL
+        `;
+
+      const rejectLeaveResult = await pool.request().query(leaveRequestsQuery);
+
+      const approverCodeQuery = `
+        SELECT 
+            code, 
+            deptCode
+        FROM 
+            [HR]..Approvers
+        WHERE 
+            code = @EmployeeCode
+        `;
+        
+      const approverCodeResult = await pool
+        .request()
+        .input('EmployeeCode', mssql.Int, EmployeeCode)
+        .query(approverCodeQuery);
+
+      // Filter rejectLeaveResult based on matching deptCode
+      const filteredRejectedLeaves = rejectLeaveResult.recordset.filter(leave => {
+          return approverCodeResult.recordset.some(approver => approver.deptCode === leave.DeptCode);
+      });
+
+      return filteredRejectedLeaves;
+    } catch (error) {
+        console.error(error);
+        return { status: 500, message: 'Error Getting Rejected Leave' };
     }
   },
 
@@ -558,7 +614,7 @@ const LeaveRequestModel = {
         updateLeaveQuery = `
           UPDATE HR..LeaveInfo
           SET Status = @Status,
-              RejectBy = @EmployeeCode,
+              RejectedBy = @EmployeeCode,
               RejectedDateTime = @ActionTime
         `;
       }
