@@ -9,7 +9,7 @@ const LeaveRequestController = {
       const { LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason } = req.body;
       const EmployeeCode = req.user.EmployeeCode;
   
-      const totalValue = await Leave.calculateTotalLeaveValue(EmployeeCode, LeaveType);
+      const totalValue = await Leave.calculateTotalLeaveValue(req.app.locals.conn, EmployeeCode, LeaveType);
   
       if (Days > totalValue) {
         return res.status(400).json({ error: 'Insufficient balance for LeaveType' });
@@ -33,7 +33,7 @@ const LeaveRequestController = {
       const { Status, LeaveID } = req.body;
       const EmployeeCode = req.user.EmployeeCode;
   
-      const rowsAffected = await Leave.updateLeaveAction(Status, LeaveID, EmployeeCode);
+      const rowsAffected = await Leave.updateLeaveAction(req.app.locals.conn, Status, LeaveID, EmployeeCode);
   
       if (rowsAffected === 0) {
         return res.status(404).json({ error: 'Leave request not found' });
@@ -51,7 +51,7 @@ const LeaveRequestController = {
     try {
       const EmployeeCode = req.user.EmployeeCode;
   
-      const success = await Leave.getLeaveDetails(EmployeeCode);
+      const success = await Leave.getLeaveDetails(req.app.locals.conn, EmployeeCode);
   
       if (success) {
         return res.status(200).json(success);
@@ -68,7 +68,7 @@ const LeaveRequestController = {
     try {
       const EmployeeCode = req.user.EmployeeCode;
 
-      const success = await Leave.getLeaveBalance(EmployeeCode);
+      const success = await Leave.getLeaveBalance(req.app.locals.conn, EmployeeCode);
   
       if (success) {
         return res.status(200).json(success);
@@ -83,7 +83,7 @@ const LeaveRequestController = {
 
   getAllLeaveBalance: async (req, res) => {
     try {
-      const success = await Leave.getAllLeaveBalance();
+      const success = await Leave.getAllLeaveBalance(req.app.locals.conn);
   
       if (success) {
         return res.status(200).json(success);
@@ -101,7 +101,7 @@ const LeaveRequestController = {
     try {
       const EmployeeCode = req.user.EmployeeCode;
 
-      const success = await Leave.getForfeitedLeave(EmployeeCode);
+      const success = await Leave.getForfeitedLeave(req.app.locals.conn, EmployeeCode);
       
       if(success) {
         return res.status(200).json(success);
@@ -122,7 +122,7 @@ const LeaveRequestController = {
       
       const EmployeeCode = req.user.EmployeeCode;
 
-      const success = await Leave.getPendingLeaves(EmployeeCode);
+      const success = await Leave.getPendingLeaves(req.app.locals.conn, EmployeeCode);
   
       if (success) {
         return res.status(200).json(success);
@@ -144,7 +144,7 @@ const LeaveRequestController = {
 
       const EmployeeCode = req.user.EmployeeCode;
 
-      const rejectedLeaves = await Leave.getRejectedLeaves(EmployeeCode);
+      const rejectedLeaves = await Leave.getRejectedLeaves(req.app.locals.conn, EmployeeCode);
   
       res.status(200).json(rejectedLeaves);
     } catch (error) {
@@ -161,7 +161,7 @@ const LeaveRequestController = {
 
       const EmployeeCode = req.user.EmployeeCode;
 
-      const approvedLeave = await Leave.getApprovedLeaves(EmployeeCode);
+      const approvedLeave = await Leave.getApprovedLeaves(req.app.locals.conn, EmployeeCode);
   
       res.status(200).json(approvedLeave);
     } catch (error) {
@@ -173,7 +173,7 @@ const LeaveRequestController = {
     try {
       const LeaveID = req.params.LeaveID;
   
-      const result = await Leave.deleteLeave(LeaveID);
+      const result = await Leave.deleteLeave(req.app.locals.conn, LeaveID);
   
       return res.status(result.status).json({ message: result.message });
     } catch (error) {
@@ -189,7 +189,7 @@ const LeaveRequestController = {
       const EmployeeCode = req.user.EmployeeCode;
 
         
-      const totalValue = await Leave.calculateTotalLeaveValueInEdit(EmployeeCode, LeaveType, LeaveID);
+      const totalValue = await Leave.calculateTotalLeaveValueInEdit(req.app.locals.conn, EmployeeCode, LeaveType, LeaveID);
 
       if (Days > totalValue) {
         return res.status(400).json({ error: 'Insufficient balance for LeaveType' });

@@ -6,11 +6,11 @@ const JWT_SECRET = 'secret';
 const tokenBlacklist = new Set();
 
 const UserController = {
-  
+
   registerUser: async (req, res) => {
     const { username, password } = req.body;
     try {
-      const message = await UserModel.registerUser(username, password);
+      const message = await UserModel.registerUser(req.app.locals.conn, username, password);
       if (message === 'User registered successfully!') {
         res.status(201).send(message);
       } else {
@@ -25,7 +25,7 @@ const UserController = {
   loginUser: async (req, res) => {
     const { username, password } = req.body;
     try {
-      const user = await UserModel.loginUser(username, password);
+      const user = await UserModel.loginUser(req.app.locals.conn, username, password);
       if (typeof user === 'object') {
         const token = jwt.sign(user, JWT_SECRET);
         res.cookie('token', token, { httpsOnly: true, secure: true });
@@ -34,7 +34,6 @@ const UserController = {
         res.status(401).send(user);
       }
     } catch (error) {
-      console.error(error);
       res.status(500).send('Error during login.');
     }
   },

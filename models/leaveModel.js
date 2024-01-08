@@ -1,4 +1,3 @@
-const { poolPromise } = require('../app');
 const mssql = require('mssql');
 const trans = require('../utils/transactionDButils');
 
@@ -6,8 +5,7 @@ const trans = require('../utils/transactionDButils');
 
 const LeaveRequestModel = {
 
-  calculateTotalLeaveValue: async (EmployeeCode, LeaveType) => {
-      const pool = await poolPromise;
+  calculateTotalLeaveValue: async (conn, EmployeeCode, LeaveType) => {
       // Query to get remaining days from [UE database]..leaveledger
       const leaveLedgerQuery = `
           SELECT
@@ -40,13 +38,13 @@ const LeaveRequestModel = {
       `;
     
       // Execute the queries
-      const leaveLedgerResult = await pool
+      const leaveLedgerResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveLedgerQuery);
 
-      const leaveInfoResult = await pool
+      const leaveInfoResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .input('LeaveType', mssql.NVarChar, LeaveType)
@@ -63,8 +61,7 @@ const LeaveRequestModel = {
   },
 
 
-  calculateTotalLeaveValueInEdit: async (EmployeeCode, LeaveType, LeaveID) => {
-      const pool = await poolPromise;
+  calculateTotalLeaveValueInEdit: async (conn, EmployeeCode, LeaveType, LeaveID) => {
 
       const leaveIDInforQuery = `
           SELECT
@@ -108,20 +105,20 @@ const LeaveRequestModel = {
               l.Code;
       `;
 
-      const leaveIDInfoResult = await pool
+      const leaveIDInfoResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .input('LeaveID', mssql.Int, LeaveID)
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveIDInforQuery);
 
-      const leaveInfoResult = await pool
+      const leaveInfoResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .input('LeaveType', mssql.NVarChar, LeaveType)
         .query(leaveInfoQuery);
       
-      const leaveLedgerResult = await pool
+      const leaveLedgerResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .input('LeaveType', mssql.NVarChar, LeaveType)
@@ -141,8 +138,7 @@ const LeaveRequestModel = {
   },
 
 
-  createLeaveRequest: async (EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
-    const pool = await poolPromise;
+  createLeaveRequest: async (conn, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
 
     const formattedTimeFrom = TimeFrom.substring(0, 5);
     const formattedTimeTo = TimeTo.substring(0, 5);
@@ -166,7 +162,7 @@ const LeaveRequestModel = {
         VALUES (@LeaveID, @EmployeeCode, @LeaveType, @Days, GETDATE(), YEAR(GETDATE()), YEAR(GETDATE()), 'FILED', @TimeFrom, @TimeTo, @DateFrom, @DateTo, @Reason, @Remarks, 'Pending')
       `;
 
-      const result = await trans.runInTransaction(pool, async (request) => {
+      const result = await trans.runInTransaction(conn, async (request) => {
           const queryResult = await request
               .input('EmployeeCode', mssql.Int, EmployeeCode)
               .input('LeaveType', mssql.NVarChar, LeaveType)
@@ -186,9 +182,8 @@ const LeaveRequestModel = {
   },
 
 
-  getLeaveDetails: async (EmployeeCode) => {
+  getLeaveDetails: async (conn, EmployeeCode) => {
     try {
-      const pool = await poolPromise;
   
       const getLeaveQuery = 
       `
@@ -209,7 +204,7 @@ const LeaveRequestModel = {
           AND LeaveInfo.DateTo IS NOT NULL
       `;
 
-      const result = await pool
+      const result = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .query(getLeaveQuery);
@@ -253,9 +248,8 @@ const LeaveRequestModel = {
   // },
 
 
-  getLeaveBalance: async (EmployeeCode) => {
+  getLeaveBalance: async (conn, EmployeeCode) => {
     try {
-        const pool = await poolPromise;
 
         const leaveBalanceQuery = `
             SELECT 
@@ -275,7 +269,7 @@ const LeaveRequestModel = {
             ORDER BY l.code, Year;
         `;
 
-        const result = await pool
+        const result = await conn
             .request()
             .input('EmployeeCode', mssql.Int, EmployeeCode)
             .query(leaveBalanceQuery);
@@ -301,9 +295,8 @@ const LeaveRequestModel = {
   },
 
 
-  getAllLeaveBalance: async () => {
+  getAllLeaveBalance: async (conn) => {
     try {
-        const pool = await poolPromise;
 
         const leaveBalanceQuery = `
             SELECT
@@ -337,7 +330,7 @@ const LeaveRequestModel = {
                 e.EmployeeCode;  
         `;
 
-        const result = await pool.request().query(leaveBalanceQuery);
+        const result = await conn.request().query(leaveBalanceQuery);
 
         if (result.recordset.length === 0) {
             return { status: 404, message: 'No Leave Balance Found for any user' };
@@ -360,9 +353,8 @@ const LeaveRequestModel = {
   },
 
 
-  getForfeitedLeave: async (EmployeeCode) => {
+  getForfeitedLeave: async (conn, EmployeeCode) => {
     try {
-      const pool = await poolPromise;
 
       const forfeitLeaveQuery = `
         SELECT *
@@ -371,7 +363,7 @@ const LeaveRequestModel = {
         WHERE
           code = @EmployeeCode
       `
-      const result = await pool
+      const result = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .query(forfeitLeaveQuery);
@@ -412,11 +404,10 @@ const LeaveRequestModel = {
     // },
 
 
-  getPendingLeaves: async (EmployeeCode) => {
+  getPendingLeaves: async (conn, EmployeeCode) => {
     try {
-      const pool = await poolPromise;
 
-        if (!pool) {
+        if (!conn) {
             return { status: 500, message: 'Error Connecting to Database' };
         }
   
@@ -431,7 +422,7 @@ const LeaveRequestModel = {
             LI.Status = 'Pending'
         `;
   
-      const pendingLeavesResult = await pool
+      const pendingLeavesResult = await conn
         .request()
         .query(pendingLeavesQuery);
   
@@ -444,7 +435,7 @@ const LeaveRequestModel = {
         WHERE 
             code = @EmployeeCode
         `;
-      const approverCodeResult = await pool
+      const approverCodeResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .query(approverCodeQuery);
@@ -462,9 +453,8 @@ const LeaveRequestModel = {
   },
   
   
-  getApprovedLeaves: async (EmployeeCode) => {
+  getApprovedLeaves: async (conn, EmployeeCode) => {
     try {
-      const pool = await poolPromise;
 
       const leaveRequestsQuery = `
         SELECT 
@@ -481,7 +471,7 @@ const LeaveRequestModel = {
             AND DateTo IS NOT NULL
         `;
 
-      const approvedLeaveResult = await pool.request().query(leaveRequestsQuery);
+      const approvedLeaveResult = await conn.request().query(leaveRequestsQuery);
       
       const approverCodeQuery = `
         SELECT 
@@ -493,7 +483,7 @@ const LeaveRequestModel = {
             code = @EmployeeCode
         `;
 
-      const approverCodeResult = await pool
+      const approverCodeResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .query(approverCodeQuery);
@@ -511,9 +501,8 @@ const LeaveRequestModel = {
   },
 
 
-  getRejectedLeaves: async (EmployeeCode) => {
+  getRejectedLeaves: async (conn, EmployeeCode) => {
     try {
-      const pool = await poolPromise;
 
       const leaveRequestsQuery = `
         SELECT 
@@ -530,7 +519,7 @@ const LeaveRequestModel = {
             AND DateTo IS NOT NULL
         `;
 
-      const rejectLeaveResult = await pool.request().query(leaveRequestsQuery);
+      const rejectLeaveResult = await conn.request().query(leaveRequestsQuery);
 
       const approverCodeQuery = `
         SELECT 
@@ -542,7 +531,7 @@ const LeaveRequestModel = {
             code = @EmployeeCode
         `;
         
-      const approverCodeResult = await pool
+      const approverCodeResult = await conn
         .request()
         .input('EmployeeCode', mssql.Int, EmployeeCode)
         .query(approverCodeQuery);
@@ -560,11 +549,10 @@ const LeaveRequestModel = {
   },
 
 
-  deleteLeave: async (LeaveID) => {
-    const pool = await poolPromise;
+  deleteLeave: async (conn, LeaveID) => {
 
     try {
-      const leaveInfoQuery = await pool
+      const leaveInfoQuery = await conn
         .request()
         .input('LeaveID', mssql.Int, LeaveID)
         .query('SELECT * FROM HR..LeaveInfo WHERE LeaveID = @LeaveID');
@@ -580,7 +568,7 @@ const LeaveRequestModel = {
         WHERE LeaveID = @LeaveID
       `;
 
-      const deleteResult = await trans.runInTransaction(pool, async (request) => {
+      const deleteResult = await trans.runInTransaction(conn, async (request) => {
         return request
           .input('LeaveID', mssql.Int, LeaveID)
           .query(deleteQuery);
@@ -598,8 +586,7 @@ const LeaveRequestModel = {
   },
 
 
-  updateLeaveAction: async (Status, LeaveID, EmployeeCode) => {
-    const pool = await poolPromise;
+  updateLeaveAction: async (conn, Status, LeaveID, EmployeeCode) => {
   
     if (Status === 'Approved' || Status === 'Rejected') {
       const actionTime = new Date();
@@ -623,7 +610,7 @@ const LeaveRequestModel = {
         WHERE LeaveID = @LeaveID
       `;
   
-      const result = await trans.runInTransaction(pool, async (request) => {
+      const result = await trans.runInTransaction(conn, async (request) => {
         const updateResult = await request
           .input('Status', mssql.NVarChar, Status)
           .input('EmployeeCode', mssql.Int, EmployeeCode)
@@ -671,8 +658,7 @@ const LeaveRequestModel = {
   },
 
 
-  updateAndValidateLeave: async (LeaveID, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
-    const pool = await poolPromise;
+  updateAndValidateLeave: async (conn, LeaveID, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason) => {
 
     const formattedTimeFrom = TimeFrom.substring(0, 5);
     const formattedTimeTo = TimeTo.substring(0, 5);
@@ -691,7 +677,7 @@ const LeaveRequestModel = {
       WHERE LeaveID = @LeaveID;
     `;
 
-    const checkLeaveOwnershipResult = await pool
+    const checkLeaveOwnershipResult = await conn
       .request()
       .input('LeaveID', mssql.Int, LeaveID)
       .query(checkLeaveOwnershipQuery);
@@ -718,7 +704,7 @@ const LeaveRequestModel = {
     `;
 
     const updateResult = 
-    await trans.runInTransaction(pool, async (request) => {
+    await trans.runInTransaction(conn, async (request) => {
       return request
         .input('Days', mssql.Float, Days)
         .input('TimeFrom', mssql.NVarChar, formattedTimeFromFinal)
