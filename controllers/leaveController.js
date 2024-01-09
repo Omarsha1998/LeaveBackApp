@@ -15,7 +15,7 @@ const LeaveRequestController = {
         return res.status(400).json({ error: 'Insufficient balance for LeaveType' });
       }
   
-      const success = await Leave.createLeaveRequest( EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason );
+      const success = await Leave.createLeaveRequest(req.app.locals.conn, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason );
       if (success) {
         return res.status(201).json({ message: 'Leave request created successfully', success: true });
       } else {
@@ -187,7 +187,6 @@ const LeaveRequestController = {
       const LeaveID = req.params.LeaveID;
       const { LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason } = req.body;
       const EmployeeCode = req.user.EmployeeCode;
-
         
       const totalValue = await Leave.calculateTotalLeaveValueInEdit(req.app.locals.conn, EmployeeCode, LeaveType, LeaveID);
 
@@ -195,7 +194,7 @@ const LeaveRequestController = {
         return res.status(400).json({ error: 'Insufficient balance for LeaveType' });
       }
   
-      const result = await Leave.updateAndValidateLeave(LeaveID, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason);
+      const result = await Leave.updateAndValidateLeave(req.app.locals.conn, LeaveID, EmployeeCode, LeaveType, Days, TimeFrom, TimeTo, DateFrom, DateTo, Reason);
   
       if (result.status === 200) {
         res.status(200).json({ message: result.message });
