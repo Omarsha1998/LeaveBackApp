@@ -59,7 +59,6 @@ const UserController = {
   logoutUser: async (req, res) => {
     const token = req.header("authorization")?.split(" ")[1];
     
-    
     if (token) {
       try {
         const conn = createClient();
@@ -74,6 +73,7 @@ const UserController = {
       res.status(400).send("Invalid request.");
     }
   },
+  
 };
 
 module.exports = UserController;

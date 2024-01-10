@@ -45,7 +45,7 @@ const tokenBlacklist = new Set()
       await client.connect();
       const isWhiteListed = await client.get("HRLeaveApp__" + user.EmployeeCode)
       if (isWhiteListed !== token) {
-        return res.status(403).send('Token White Listed');
+        return res.status(403).send('Token is Not White Listed');
       }
       req.user = user;
       next();
@@ -55,7 +55,6 @@ const tokenBlacklist = new Set()
 
     // can add optional jwt verification here
   };
-
 
 
 
