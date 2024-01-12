@@ -46,7 +46,6 @@ const UserController = {
           console.log(err);
         }
   
-        res.cookie("token", token, { httpsOnly: true, secure: true });
         res.status(200).json({ message: "Login successful!", token });
       } else {
         res.status(401).send(user);
