@@ -32,9 +32,9 @@ const UserController = {
         username,
         password
       );
+
       if (typeof user === "object") {
-        const token = jwt.sign(user, JWT_SECRET);
-  
+        const token = jwt.sign(user, JWT_SECRET);  
         try {
           const conn = createClient();
           

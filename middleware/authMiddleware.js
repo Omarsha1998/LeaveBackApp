@@ -42,12 +42,14 @@ const tokenBlacklist = new Set()
     const user = jwt.decode(token);
     const client = createClient()
 
-    if (user === null) {
-      return res.status(403).send('Token is Invalid / Not Working')
-    }
 
     try {
       await client.connect();
+      
+      if (user === null) {
+        return res.status(403).send('Token is Invalid / Not Working')
+      }
+
       const isWhiteListed = await client.get("HRLeaveApp__" + user.EmployeeCode)
       if (isWhiteListed !== token) {
         return res.status(403).send('Token is Not White Listed');

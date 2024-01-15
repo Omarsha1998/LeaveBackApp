@@ -1,5 +1,4 @@
 const bcrypt = require('bcrypt');
-const { poolPromise } = require('../app');
 const axios = require('axios');
 
 
@@ -54,74 +53,10 @@ const UserModel = {
   //   }
   // },
 
-  // loginUser: async (employeeCode, password) => {
-  //   try {
-  //     const pool = await poolPromise;
-  //     const request = pool.request();
-  //     const result = await request.query(`SELECT * FROM Employee WHERE EmployeeCode = '${employeeCode}'`);
-  //     const employee = result.recordset[0];
-  
-  //     if (!employee) {
-  //       return 'Invalid employee code or password.';
-  //     }
-  
-  //     // Bypass password check for testing purposes
-  //     const isTestMode = true;
-  //     if (isTestMode) {
-  //       // Make a request to the access-right URL
-  //       const accessRightResponse = await axios.get('http://10.107.0.10:3000/access-right', {
-  //         params: {
-  //           appName: 'Purchase Request',
-  //           moduleName: 'Approver Item Request',
-  //           code: employee.EmployeeCode
-  //         }
-  //       });
-  
-  //       // Check the access right response
-  //       const isAccess = accessRightResponse.data[0]?.isAccess || false;
-  //       const isAdmin = isAccess;
-  
-  //       return {
-  //         Name: employee.LastName + ',' + ' ' + employee.FirstName + ' ' + employee.MiddleInitial + '.',
-  //         EmployeeCode: employee.EmployeeCode,
-  //         isAdmin: isAdmin
-  //       };
-  //     }
-  
-  //     // Check if the hashed password matches the stored hashed password
-  //     const passwordMatch = await bcrypt.compare(password, employee.Password);
-  
-  //     if (passwordMatch) {
-  //       // Make a request to the access-right URL
-  //       const accessRightResponse = await axios.get('http://10.107.0.10:3000/access-right', {
-  //         params: {
-  //           appName: 'Purchase Request',
-  //           moduleName: 'Approver Item Request',
-  //           code: employee.EmployeeCode
-  //         }
-  //       });
-  
-  //       // Check the access right response
-  //       const isAccess = accessRightResponse.data[0]?.isAccess || false;
-  //       const isAdmin = isAccess;
-  
-  //       return {
-  //         Name: employee.LastName + ',' + ' ' + employee.FirstName + ' ' + employee.MiddleInitial + '.',
-  //         EmployeeCode: employee.EmployeeCode,
-  //         isAdmin: isAdmin
-  //       };
-  //     } else {
-  //       return 'Invalid employee code or password.';
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // },
-
-  loginUser: async (conn, EmployeeCode, password) => {
+  loginUser: async (conn, employeeCode, password) => {
     try {
       const request = conn.request();
-      const result = await request.query(`SELECT * FROM Employee WHERE EmployeeCode = '${EmployeeCode}'`);
+      const result = await request.query(`SELECT * FROM Employee WHERE EmployeeCode = '${employeeCode}'`);
       const employee = result.recordset[0];
   
       if (!employee) {
@@ -131,10 +66,21 @@ const UserModel = {
       // Bypass password check for testing purposes
       const isTestMode = true;
       if (isTestMode) {
+        // Make a request to the access-right URL
+        const accessRightResponse = await axios.get('http://10.107.0.10:3000/access-right', {
+          params: {
+            appName: 'Purchase Request',
+            moduleName: 'Approver Item Request',
+            code: employee.EmployeeCode
+          }
+        });
+  
+        // Check the access right response
+        const isAccess = accessRightResponse.data[0]?.isAccess || false;
+  
         return {
           Name: employee.LastName + ',' + ' ' + employee.FirstName + ' ' + employee.MiddleInitial + '.',
           EmployeeCode: employee.EmployeeCode,
-          Department: employee.DeptCode,
           isAdmin: true
         };
       }
@@ -143,10 +89,22 @@ const UserModel = {
       const passwordMatch = await bcrypt.compare(password, employee.Password);
   
       if (passwordMatch) {
-        return {
+        // Make a request to the access-right URL
+        const accessRightResponse = await axios.get('http://10.107.0.10:3000/access-right', {
+          params: {
+            appName: 'Purchase Request',
+            moduleName: 'Approver Item Request',
+            code: employee.EmployeeCode
+          }
+        });
+  
+        // Check the access right response
+        const isAccess = accessRightResponse.data[0]?.isAccess || false;
+  
+        return result = {
           Name: employee.LastName + ',' + ' ' + employee.FirstName + ' ' + employee.MiddleInitial + '.',
           EmployeeCode: employee.EmployeeCode,
-          isAdmin: true
+          isAdmin: isAccess
         };
       } else {
         return 'Invalid employee code or password.';
@@ -154,10 +112,9 @@ const UserModel = {
     } catch (error) {
       throw error;
     }
-  },
-  
 
-  
+
+  },
 
 
 };
